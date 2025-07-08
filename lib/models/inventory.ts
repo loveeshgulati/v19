@@ -29,6 +29,7 @@ export interface Supplier {
   totalOrders: number
   totalValue: number
   status: "Active" | "Inactive" | "Under Review"
+  password?: string // For creating supplier user accounts
   createdAt?: string
   updatedAt?: string
 }

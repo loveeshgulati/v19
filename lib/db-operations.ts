@@ -123,42 +123,102 @@ export async function createSupplier(supplier: Omit<Supplier, "_id" | "createdAt
   const suppliersCollection = db.collection<Supplier>("suppliers");
   const usersCollection = db.collection("users");
 
-  const session = db.client.startSession();
+  // Validate required fields
+  if (!supplier.email || !supplier.contactPerson || !supplier.name) {
+    throw new Error('Email, contact person, and name are required');
+  }
 
+  if (!supplier.password) {
+    throw new Error('Password is required for supplier login');
+  }
+
+  // Normalize email
+  const normalizedEmail = supplier.email.toLowerCase().trim();
+
+  // Check if email already exists
+  const existingUser = await usersCollection.findOne({ 
+    email: normalizedEmail, 
+    role: "supplier" 
+  });
+  
+  if (existingUser) {
+    throw new Error(`Supplier with email ${normalizedEmail} already exists`);
+  }
+
+  const existingSupplier = await suppliersCollection.findOne({ 
+    email: normalizedEmail 
+  });
+  
+  if (existingSupplier) {
+    throw new Error(`Supplier with email ${normalizedEmail} already exists`);
+  }
+
+  let session;
+  
   try {
-    session.startTransaction();
+    // Try to start a session for transaction
+    session = db.client.startSession();
+    await session.startTransaction();
 
     const newSupplier = {
       ...supplier,
+      email: normalizedEmail,
+      status: supplier.status || 'Active', // Ensure status is set
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    console.log(`Creating supplier: ${newSupplier.name} (${newSupplier.email})`);
     const supplierResult = await suppliersCollection.insertOne(newSupplier, { session });
     const supplierId = supplierResult.insertedId;
+    console.log(`✅ Supplier created with ID: ${supplierId}`);
 
     const hashedPassword = await hashPassword(supplier.password);
+    console.log(`✅ Password hashed for ${normalizedEmail}`);
 
     const newUser = {
-      email: supplier.email,
+      email: normalizedEmail,
       password: hashedPassword,
       name: supplier.contactPerson,
-      role: "supplier",
+      role: "supplier" as const,
       supplierId: supplierId.toString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    console.log(`Creating user record for: ${normalizedEmail}`);
     await usersCollection.insertOne(newUser, { session });
+    console.log(`✅ User record created for ${normalizedEmail}`);
 
     await session.commitTransaction();
+    console.log(`✅ Transaction committed successfully`);
 
     return { ...newSupplier, _id: supplierId.toString() };
   } catch (error) {
-    await session.abortTransaction();
-    throw error;
+    console.error('❌ Error creating supplier:', error);
+    
+    if (session) {
+      try {
+        await session.abortTransaction();
+        console.log('🔄 Transaction aborted');
+      } catch (abortError) {
+        console.error('❌ Error aborting transaction:', abortError);
+      }
+    }
+    
+    // Re-throw the original error with more context
+    if (error instanceof Error) {
+      throw new Error(`Failed to create supplier: ${error.message}`);
+    }
+    throw new Error('Failed to create supplier: Unknown error');
   } finally {
-    session.endSession();
+    if (session) {
+      try {
+        await session.endSession();
+      } catch (endError) {
+        console.error('❌ Error ending session:', endError);
+      }
+    }
   }
 }
 

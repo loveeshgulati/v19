@@ -1,8 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getPurchaseOrders, createPurchaseOrder } from "@/lib/db-operations"
+import { verifyToken, findUserById } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
+    // Get authentication token
+    const authHeader = request.headers.get("authorization")
+    let user = null
+    
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7)
+      const decoded = verifyToken(token)
+      if (decoded) {
+        user = await findUserById(decoded.userId)
+      }
+    }
+
     const { searchParams } = new URL(request.url)
     const filters = {
       status: searchParams.get("status") || undefined,
@@ -10,7 +23,14 @@ export async function GET(request: NextRequest) {
       assignedTo: searchParams.get("assignedTo") || undefined,
     }
 
+    // If user is a supplier, force filter by their name/email
+    if (user && user.role === 'supplier') {
+      filters.supplier = user.name || user.email
+      console.log(`🔍 Filtering orders for supplier: ${filters.supplier}`)
+    }
+
     const orders = await getPurchaseOrders(filters)
+    console.log(`📦 Found ${orders.length} orders for filters:`, filters)
     return NextResponse.json(orders)
   } catch (error) {
     console.error("Error fetching purchase orders:", error)

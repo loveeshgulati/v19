@@ -263,10 +263,9 @@ export const PO_STATUSES = [
 ]
 
 export const SUPPLIER_STATUSES = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "under_review", label: "Under Review" },
-  { value: "revoked", label: "Revoked" },
+  { value: "Active", label: "Active" },
+  { value: "Inactive", label: "Inactive" },
+  { value: "Under Review", label: "Under Review" },
 ]
 
 export const INVENTORY_STATUSES = [

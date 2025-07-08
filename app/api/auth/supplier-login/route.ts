@@ -25,7 +25,7 @@ const db = await getDatabase();
 
     if (user.role === 'supplier' && user.supplierId) {
       const supplierStatus = await checkSupplierStatus(user.supplierId);
-      if (supplierStatus !== 'active') {
+      if (supplierStatus && supplierStatus.toLowerCase() !== 'active') {
         return NextResponse.json({ 
           error: `Access denied. Your supplier account status is '${supplierStatus}'. Please contact support.` 
         }, { status: 403 });

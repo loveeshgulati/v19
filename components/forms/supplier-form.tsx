@@ -39,7 +39,7 @@ export function SupplierForm({ onSubmit, trigger, initialData }: SupplierFormPro
     onTimeDelivery: initialData?.onTimeDelivery || 100,
     totalOrders: initialData?.totalOrders || 0,
     totalValue: initialData?.totalValue || 0,
-    status: initialData?.status || "active",
+    status: initialData?.status || "Active",
     password: "",
   })
 
@@ -61,7 +61,7 @@ export function SupplierForm({ onSubmit, trigger, initialData }: SupplierFormPro
         onTimeDelivery: 100,
         totalOrders: 0,
         totalValue: 0,
-        status: "active",
+        status: "Active",
         password: "",
       })
     } finally {
@@ -81,7 +81,7 @@ export function SupplierForm({ onSubmit, trigger, initialData }: SupplierFormPro
       onTimeDelivery: 100,
       totalOrders: 0,
       totalValue: 0,
-      status: "active",
+      status: "Active",
       password: "",
     })
   }

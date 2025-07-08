@@ -132,7 +132,7 @@ export default function SupplierDashboard() {
       
       // Fetch inventory data filtered by supplier
       const supplierName = user?.name || user?.email;
-      const inventoryResponse = await fetch(`/api/inventory?supplier=${encodeURIComponent(supplierName)}`, { headers });
+    const inventoryResponse = await fetch(`/api/inventory?supplier=${encodeURIComponent(supplierName)}`, { headers });
       const inventoryData = await inventoryResponse.json();
       
       // Data is already filtered by backend
@@ -141,6 +141,14 @@ export default function SupplierDashboard() {
       // Fetch purchase orders filtered by supplier
       const ordersResponse = await fetch(`/api/purchase-orders?supplier=${encodeURIComponent(supplierName)}`, { headers });
       const ordersData = await ordersResponse.json();
+
+      // Update all fetched orders to set their status to 'new' if newly created
+      const updatedOrders = ordersData.map(order => {
+        if (order.status === 'new') {
+          order.status = 'New Order';
+        }
+        return order;
+      });
       
       // Data is already filtered by backend
       const supplierOrders = ordersData;
@@ -348,6 +356,35 @@ export default function SupplierDashboard() {
     } catch (error) {
       console.error('Error deleting item:', error)
       toast.error('Failed to delete item. Please try again.')
+    }
+  }
+
+  const handleOrderStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      const response = await fetch(`/api/purchase-orders/${orderId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update order status')
+      }
+
+      // Refresh the supplier data
+      await fetchSupplierData()
+      toast.success(`Order status updated to ${newStatus}!`)
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      toast.error('Failed to update order status. Please try again.')
     }
   }
 
@@ -605,7 +642,7 @@ export default function SupplierDashboard() {
               )}
             </div>
             <div className="mt-4">
-              <Button variant="outline" className="w-full" onClick={() => router.push('/inventory')}>
+              <Button variant="outline" className="w-full" onClick={() => router.push('/supplier-inventory')}>
                 View All Inventory
               </Button>
             </div>
@@ -626,19 +663,95 @@ export default function SupplierDashboard() {
                 <p className="text-gray-500 text-center py-4">No orders found</p>
               ) : (
                 recentOrders.map((order) => (
-                  <div key={order._id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">#{order.orderNumber}</h4>
-                      <p className="text-sm text-gray-600">
-                        {new Date(order.orderDate).toLocaleDateString()}
-                      </p>
+                  <div key={order._id} className="p-3 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium">#{order.orderNumber}</h4>
+                        <p className="text-sm text-gray-600">
+                          {new Date(order.orderDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">₹{order.totalAmount.toLocaleString()}</p>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${order.totalAmount.toLocaleString()}</p>
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
+                    
+                    {/* Order Items */}
+                    <div className="text-sm text-gray-600">
+                      <p><strong>Items:</strong> {order.items?.length || 0} product(s)</p>
+                      {order.items && order.items.length > 0 && (
+                        <ul className="list-disc list-inside mt-1">
+                          {order.items.slice(0, 2).map((item, index) => (
+                            <li key={index}>{item.product} x {item.quantity}</li>
+                          ))}
+                          {order.items.length > 2 && (
+                            <li>... and {order.items.length - 2} more items</li>
+                          )}
+                        </ul>
+                      )}
                     </div>
+                    
+                    {/* Status Update Buttons */}
+                    {(order.status === 'pending' || order.status === 'Pending Approval' || order.status === 'Approved') && (
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleOrderStatusUpdate(order._id, 'Processing')}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Clock className="h-3 w-3 mr-1" />
+                          Start Processing
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleOrderStatusUpdate(order._id, 'In Transit')}
+                          className="text-orange-600 hover:text-orange-700"
+                        >
+                          <Package className="h-3 w-3 mr-1" />
+                          Ship Order
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {order.status === 'Processing' && (
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleOrderStatusUpdate(order._id, 'In Transit')}
+                          className="text-orange-600 hover:text-orange-700"
+                        >
+                          <Package className="h-3 w-3 mr-1" />
+                          Ship Order
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleOrderStatusUpdate(order._id, 'Delivered')}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Mark Delivered
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {order.status === 'In Transit' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleOrderStatusUpdate(order._id, 'Delivered')}
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Mark as Delivered
+                      </Button>
+                    )}
                   </div>
                 ))
               )}
@@ -664,7 +777,7 @@ export default function SupplierDashboard() {
               <Plus className="h-4 w-4" />
               Add Inventory
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/inventory')}>
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/supplier-inventory')}>
               <Package className="h-4 w-4" />
               Manage Inventory
             </Button>

@@ -78,14 +78,20 @@ export async function checkSupplierStatus(supplierId: string): Promise<string | 
   const db = await getDatabase()
   const { ObjectId } = require("mongodb")
   
-  // Check if supplierId is a valid ObjectId format
-  if (!ObjectId.isValid(supplierId)) {
-    // If it's not a valid ObjectId, try to find by supplierId field instead
+  try {
+    // Always try to search by _id first since supplierId is stored as ObjectId string
+    if (ObjectId.isValid(supplierId)) {
+      const supplier = await db.collection("suppliers").findOne({ _id: new ObjectId(supplierId) })
+      if (supplier) {
+        return supplier.status || 'active'
+      }
+    }
+    
+    // Fallback: try to find by supplierId field
     const supplier = await db.collection("suppliers").findOne({ supplierId: supplierId })
     return supplier?.status || null
+  } catch (error) {
+    console.error('Error checking supplier status:', error)
+    return null
   }
-  
-  // If it's a valid ObjectId, search by _id
-  const supplier = await db.collection("suppliers").findOne({ _id: new ObjectId(supplierId) })
-  return supplier?.status || null
 }

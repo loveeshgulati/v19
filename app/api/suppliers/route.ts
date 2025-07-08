@@ -27,18 +27,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name, contact person, and email are required" }, { status: 400 })
     }
 
+    // Validate password
+    if (!body.password) {
+      return NextResponse.json({ error: "Password is required for supplier login" }, { status: 400 })
+    }
+
+    console.log(`📝 Creating supplier: ${body.name} (${body.email})`);
+
     const newSupplier = await createSupplier({
       ...body,
-      rating: body.rating || 0,
-      onTimeDelivery: body.onTimeDelivery || 0,
+      rating: body.rating || 5.0,
+      onTimeDelivery: body.onTimeDelivery || 100,
       totalOrders: body.totalOrders || 0,
       totalValue: body.totalValue || 0,
-      status: body.status || "Active",
+      status: body.status || "Active"
     })
 
+    console.log(`✅ Supplier created successfully: ${newSupplier.name}`);
     return NextResponse.json(newSupplier, { status: 201 })
   } catch (error) {
-    console.error("Error creating supplier:", error)
+    console.error("❌ Error creating supplier:", error)
+    
+    // Return specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('already exists')) {
+        return NextResponse.json({ error: error.message }, { status: 409 })
+      }
+      if (error.message.includes('required')) {
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
     return NextResponse.json({ error: "Failed to create supplier" }, { status: 500 })
   }
 }

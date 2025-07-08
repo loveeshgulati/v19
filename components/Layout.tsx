@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { Sidebar } from "./Sidebar"
-import { Header } from "./Header"
+import { Header } from "./header"
 import { AuthGuard } from "./AuthGuard"
 
 interface LayoutProps {

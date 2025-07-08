@@ -29,9 +29,11 @@ export async function GET(request: NextRequest) {
     // If user is a supplier, force filter by their name/email
     if (user && user.role === 'supplier') {
       filters.supplier = user.name || user.email
+      console.log(`🔍 Filtering inventory for supplier: ${filters.supplier}`)
     }
 
     const inventory = await getInventoryItems(filters)
+    console.log(`📦 Found ${inventory.length} inventory items for filters:`, filters)
     return NextResponse.json(inventory)
   } catch (error) {
     console.error("Error fetching inventory:", error)
