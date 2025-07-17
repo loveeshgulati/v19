@@ -267,6 +267,14 @@ export async function getPurchaseOrders(
   return await collection.find(query).sort({ createdAt: -1 }).toArray()
 }
 
+export async function getPurchaseOrderById(id: string) {
+  const db = await getDatabase()
+  const collection = db.collection<PurchaseOrder>("purchaseOrders")
+
+  const order = await collection.findOne({ _id: new ObjectId(id) })
+  return order
+}
+
 export async function createPurchaseOrder(order: Omit<PurchaseOrder, "_id" | "createdAt" | "updatedAt">) {
   const db = await getDatabase()
   const collection = db.collection<PurchaseOrder>("purchaseOrders")

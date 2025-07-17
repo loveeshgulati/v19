@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { updatePurchaseOrderStatus } from "@/lib/db-operations"
+import { updatePurchaseOrderStatus, getPurchaseOrderById } from "@/lib/db-operations"
 import { verifyToken, findUserById } from "@/lib/auth"
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -49,9 +49,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-    
-    // You can implement get single order logic here if needed
-    return NextResponse.json({ message: "Get single order endpoint" })
+    // Implement get single order logic here
+    const order = await getPurchaseOrderById(id)
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
+    return NextResponse.json(order)
   } catch (error) {
     console.error("Error fetching purchase order:", error)
     return NextResponse.json({ error: "Failed to fetch purchase order" }, { status: 500 })

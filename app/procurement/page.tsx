@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PurchaseOrderForm } from "@/components/forms/purchase-order-form"
 import { ShoppingCart, Search, Plus, Calendar, User, Package } from "lucide-react"
 import { toast } from "react-hot-toast"
@@ -13,10 +14,12 @@ import type { PurchaseOrder } from "@/lib/models/inventory"
 
 
 const getStatusColor = (status: string) => {
-  switch (status) {
+  switch (status?.toLowerCase()) {
     case "delivered":
+    case "complete":
       return "default"
     case "in_transit":
+    case "in process":
       return "secondary"
     case "processing":
       return "outline"
@@ -32,7 +35,7 @@ const getStatusColor = (status: string) => {
 }
 
 const getStatusText = (status: string) => {
-  switch (status) {
+  switch (status?.toLowerCase()) {
     case "delivered":
       return "Delivered"
     case "in_transit":
@@ -45,8 +48,12 @@ const getStatusText = (status: string) => {
       return "Draft"
     case "approved":
       return "Approved"
+    case "in process":
+      return "In Process"
+    case "complete":
+      return "Complete"
     default:
-      return status
+      return status || "Unknown"
   }
 }
 
@@ -130,6 +137,59 @@ export default function ProcurementPage() {
       : 0
   }
 
+const handleViewDetails = (order: any) => {
+    // View details modal/functionality
+    alert(`Order Details:\n\nOrder Number: ${order.orderNumber}\nSupplier: ${order.supplier}\nStatus: ${order.status}\nTotal Amount: ${order.totalAmount}\nOrder Date: ${order.orderDate}\nDelivery Date: ${order.expectedDelivery}\nAssigned To: ${order.assignedTo}\n\nItems:\n${order.items.map((item: any) => `- ${item.name} (Qty: ${item.quantity}, Unit Price: ${item.unitPrice})`).join('\n')}`)
+  }
+
+  const handleEditOrder = async (order: any) => {
+    try {
+      const updatedStatus = prompt("Enter new status (Draft, In Process, Complete):", order.status)
+      if (!updatedStatus) return
+
+      const response = await fetch(`/api/purchase-orders/${order._id || order.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: updatedStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update order status")
+      }
+
+      toast.success("Order updated successfully!")
+      // Refresh the purchase orders list
+      await fetchPurchaseOrders()
+    } catch (error) {
+      console.error("Error updating order:", error)
+      toast.error("Failed to update order")
+    }
+  }
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/purchase-orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update order status")
+      }
+
+      toast.success("Status updated successfully!")
+      await fetchPurchaseOrders()
+    } catch (error) {
+      console.error("Error updating status:", error)
+      toast.error("Failed to update status")
+    }
+  }
+
   const handleCreatePurchaseOrder = async (orderData: Omit<PurchaseOrder, "_id" | "createdAt" | "updatedAt">) => {
     try {
       const response = await fetch("/api/purchase-orders", {
@@ -187,22 +247,22 @@ export default function ProcurementPage() {
                   All Orders
                 </Button>
                 <Button 
-                  variant={statusFilter === 'pending approval' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('pending approval')}
+                  variant={statusFilter === 'draft' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('draft')}
                 >
-                  Pending
+                  Draft
                 </Button>
                 <Button 
-                  variant={statusFilter === 'in transit' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('in transit')}
+                  variant={statusFilter === 'in process' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('in process')}
                 >
-                  In Transit
+                  In Process
                 </Button>
                 <Button 
-                  variant={statusFilter === 'delivered' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('delivered')}
+                  variant={statusFilter === 'complete' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('complete')}
                 >
-                  Delivered
+                  Complete
                 </Button>
               </div>
             </div>
@@ -281,7 +341,22 @@ export default function ProcurementPage() {
                     <CardTitle className="text-lg">{order.orderNumber || order.id}</CardTitle>
                     <CardDescription>{order.supplier}</CardDescription>
                   </div>
-                  <Badge variant={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
+                    <Select 
+                      value={order.status} 
+                      onValueChange={(value) => handleStatusChange(order._id || order.id, value)}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="In Process">In Process</SelectItem>
+                        <SelectItem value="Complete">Complete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -337,13 +412,15 @@ export default function ProcurementPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
-                  <Button variant="outline" size="sm">
+<Button variant="outline" size="sm" onClick={() => handleViewDetails(order)}>
                     View Details
                   </Button>
                   <Button variant="outline" size="sm">
                     Track Order
                   </Button>
-                  <Button size="sm">Edit Order</Button>
+                  <Button size="sm" onClick={() => handleEditOrder(order)}>
+                    Edit Order
+                  </Button>
                 </div>
               </CardContent>
             </Card>
