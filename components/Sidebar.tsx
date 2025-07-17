@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building2, LayoutDashboard, Package, ShoppingCart, Users, Truck, Menu, X } from "lucide-react"
+import { Building2, LayoutDashboard, Package, ShoppingCart, Users, Truck, Menu, X, HelpCircle } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
 const managerNavigation = [
@@ -12,12 +12,14 @@ const managerNavigation = [
   { name: "Procurement", href: "/procurement", icon: ShoppingCart },
   { name: "Suppliers", href: "/suppliers", icon: Users },
   { name: "Logistics", href: "/logistics", icon: Truck },
+  { name: "Support", href: "/support", icon: HelpCircle },
 ]
 
 const supplierNavigation = [
   { name: "Dashboard", href: "/supplier-dashboard", icon: LayoutDashboard },
   { name: "My Inventory", href: "/supplier-inventory", icon: Package },
   { name: "Purchase Orders", href: "/supplier-procurement", icon: ShoppingCart },
+  { name: "Support", href: "/support", icon: HelpCircle },
 ]
 
 export function Sidebar() {

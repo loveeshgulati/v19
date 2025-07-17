@@ -1,42 +1,68 @@
 "use client"
 
-import { Layout } from "@/components/Layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ShoppingCart } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/Layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PurchaseOrderList } from "@/components/purchase-order-list";
+import { useAuth } from "@/contexts/AuthContext";
+import { ShoppingCart } from "lucide-react";
 
 export default function SupplierProcurementPage() {
+  const { user } = useAuth();
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const supplierName = user?.name || user?.email;
+        const response = await fetch(`/api/purchase-orders?supplier=${encodeURIComponent(supplierName)}`, { headers });
+        const data = await response.json();
+        setPurchaseOrders(data);
+      } catch (error) {
+        console.error('Error fetching purchase orders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <p className="text-gray-500">Loading purchase orders...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
-            <p className="text-gray-600">View and manage your purchase orders</p>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
+          <p className="text-gray-600">Manage your purchase orders effectively</p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
               Purchase Order Management
             </CardTitle>
-            <CardDescription>
-              This page is under development. You can currently view your orders from the main dashboard.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
-              <p className="text-gray-600">
-                Advanced purchase order management features will be available here soon.
-                For now, you can view your orders from the supplier dashboard.
-              </p>
-            </div>
+            <PurchaseOrderList purchaseOrders={purchaseOrders} />
           </CardContent>
         </Card>
       </div>
     </Layout>
-  )
+  );
 }

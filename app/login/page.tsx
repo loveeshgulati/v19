@@ -92,8 +92,60 @@ export default function LoginPage() {
           </Card>
         </div>
 
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>Need help? Contact our support team</p>
+        {/* Enhanced Support Section */}
+        <div className="mt-8 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Need Help?</h3>
+            <p className="text-gray-600 text-sm">Our support team is here to assist you with any login issues or questions.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Building2 className="h-5 w-5 text-blue-600 mr-2" />
+                <span className="font-medium text-blue-800">Manager Support</span>
+              </div>
+              <p className="text-sm text-blue-700">Issues with dashboard access, user management, or system administration</p>
+            </div>
+            
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Users className="h-5 w-5 text-green-600 mr-2" />
+                <span className="font-medium text-green-800">Supplier Support</span>
+              </div>
+              <p className="text-sm text-green-700">Help with supplier portal, inventory updates, or order management</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/support">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ArrowRight className="h-4 w-4" />
+                Contact Support Team
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+              onClick={() => window.open('mailto:loveesh1gulati@gmail.com', '_blank')}
+            >
+              <ArrowRight className="h-4 w-4" />
+              Email Support
+            </Button>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-center items-center gap-6 text-sm text-gray-500">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Response within 24 hours</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Available 24/7</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
